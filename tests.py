@@ -215,4 +215,5 @@ class TestZZZZZZZZZ(TestCase):
         print('tests finished')
 
 
-unittest.main()
+if __name__ == '__main__':
+    unittest.main()
