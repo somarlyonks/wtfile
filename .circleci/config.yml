@@ -5,17 +5,15 @@ jobs:
       - image: circleci/python:3.6-stretch # https://hub.docker.com/r/circleci/python/
     steps:
       - checkout
-      # - run: sudo chown -R circleci:circleci /usr/local/bin
-      # - run: sudo chown -R circleci:circleci /usr/local/lib/python3.6/site-packages
-      # - restore_cache: # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
-      #     key: deps9-{{ .Branch }}-{{ checksum "setup.py" }}
-      # - run: sudo pip install codecov coverage
-      # - save_cache:
-      #     key: deps9-{{ .Branch }}-{{ checksum "setup.py" }}
-      #     paths:
-      #       - "/usr/local/bin"
-      #       - "/usr/local/lib/python3.6/site-packages"
-      - run: make test
-      # todo: collect test data
-      # - store_test_results: # https://circleci.com/docs/2.0/collect-test-data/
-      #     path: test-results
+      - run: sudo chown -R circleci:circleci /usr/local/bin
+      - run: sudo chown -R circleci:circleci /usr/local/lib/python3.6/site-packages
+      - restore_cache: # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
+          key: deps9-{{ .Branch }}-{{ checksum "ci.txt" }}
+      - run: pip install -r ci.txt
+      - save_cache:
+          key: deps9-{{ .Branch }}-{{ checksum "ci.txt" }}
+          paths:
+            - "/usr/local/bin"
+            - "/usr/local/lib/python3.6/site-packages"
+      - run: coverage run --include wtfile.py setup.py test
+      - run: codecov --token $CODECOV_TOKEN
