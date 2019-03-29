@@ -20,7 +20,8 @@ REQUIRED = [
 ]
 
 EXTRAS = {
-    'tests': ['coverage']
+    'build': ['setuptools'],
+    'tests': ['coverage', 'codecov']
 }
 
 
