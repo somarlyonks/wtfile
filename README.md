@@ -1,4 +1,4 @@
-# WTFile
+# WTFile [![CircleCI](https://img.shields.io/circleci/project/github/somarlyonks/wtfile/master.svg)](https://circleci.com/gh/somarlyonks/wtfile) [![Coveralls branch](https://codecov.io/gh/somarlyonks/wtfile/branch/master/graph/badge.svg)](https://codecov.io/gh/somarlyonks/wtfile)
 
 An insane alternative to `pathlib.Path` and `path.py`.
 
