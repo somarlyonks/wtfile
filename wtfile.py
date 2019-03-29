@@ -405,7 +405,7 @@ class FExt(FBase):
     def __radd__(self, other):
         if (self.startswith('.')):
             return self._derive_(str.__add__('.', other).__add__(self[1:]))
-        return super(FExt, self).__radd__(self, other)
+        return super(FExt, self).__radd__(str.__add__('.', other))
 
     def __call__(self, ext, *a, **ka):
         return self._parent._ext(ext, *a, **ka)  # pylint: disable=protected-access

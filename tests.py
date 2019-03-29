@@ -12,11 +12,11 @@ from wtfile import FExt, FStem, FName
 
 
 def TODO(*_):
-    scan = False  # TODO IN TODO read it from CI envs
-    if scan:
-        raise NotImplementedError(*_)
-    else:
+    scan = False
+    if os.getenv('CI'):
         pass
+    elif scan:
+        raise NotImplementedError(*_)
 
 
 # order 0: makesure tests runable
@@ -162,6 +162,7 @@ class TestComponents(IOCase):
     @IOCase.scarecrow()
     def test_radd(self, file):
         self.assertEqual('x' + file.ext, '.xfile')
+        self.assertEqual('x' + F('file').ext, '.x')
         self.assertEqual('x' + file.stem, 'xtmp')
         self.assertEqual('x' + file.name, 'xtmp.file')
         self.assertEqual(type('x' + file.ext), FExt)
