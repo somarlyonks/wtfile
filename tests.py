@@ -202,6 +202,13 @@ class TestPath(TestCase):
         dir_ = F('/tmp/wtfile/folder')
         self.assertEqual(dir_.cd('..'), '/tmp/wtfile')
         self.assertEqual(dir_.cd('...'), '/tmp')
+        self.assertEqual(dir_.cd('./subfolder'), '/tmp/wtfile/folder/subfolder')
+        self.assertEqual(dir_.cd('../folder2'), '/tmp/wtfile/folder2')
+
+    @IOCase.expect_exception(ValueError)
+    def test_cd_exception(self):
+        dir_ = F('/tmp/wtfile')
+        dir_.cd('.../wtfile')
 
     def test_cd_root(self):
         dir_ = F('/tmp/wtfile')
@@ -229,7 +236,12 @@ class TestIO(IOCase):
         self.assertEqual(file.abspath, os.path.abspath(file))
 
     def test_with_block(self):
-        TODO()
+        pwd = os.getcwd()
+        self.assertNotEqual(F.DIR, self.dir)
+        with self.dir as DIR:
+            self.assertEqual(DIR, '/tmp/wtfile')
+            self.assertEqual(F.DIR, '/tmp/wtfile')
+        self.assertEqual(F.DIR, pwd)
 
     TODO()
 

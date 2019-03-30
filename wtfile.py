@@ -198,9 +198,12 @@ class FPath(FBase):
             return self.parent.parent
         if target == '..':
             return self.parent
+        if target.startswith('./'):
+            return self(target.replace('./', ''))
         if target.startswith('../'):
-            target = target.replace('../', '')
-            return self.parent(target)
+            return self.parent(target.replace('../', ''))
+        if target.startswith('.../'):
+            raise ValueError('没有人能听你说话，没有人能背你回家。')
         return self(target)
 
 
