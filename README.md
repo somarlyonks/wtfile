@@ -8,11 +8,16 @@ It's just an aggressive and insane option, it deponds on nothing but Python3.6.0
 
 ## usage
 
-### callable string
+### callable "string"
 
 ```python
 >>> from wtfile import F
->>> f = F('/home/sy', 'test.cc')
+>>> f = F('/home', 'sy')
+>>> f
+/home/sy
+>>> f = f('test.cc')
+>>> f
+/home/sy/test.cc
 >>> f.ext
 .cc
 >>> f.ext('h')
@@ -33,9 +38,13 @@ name.h
 /home/sy/test.cc
 >>> f.name
 test.cc
+>>> 'g' + f.ext
+.gcc
+>>> f.ext + 'g'
+.ccg
 ```
 
-### oo && linkage
+### OO && linkage
 
 ```python
 >>> f = F('/home/sy', 'test.c')
@@ -51,11 +60,25 @@ test.cc
 /home/sy/test.h
 >>> f.read()
 'int main(void);'
+>>> f.mtime
+1553913442.148171
 ```
 
-## reference
+For more evil actions you may refer to the [tests.py](./tests.py) or the upcoming docs.
 
-PEP519
+## TODO
+
+- more reliable IO operations
+- more tests
+- asynchronous support
+
+## references
+
+[PEP 355 -- Path - Object oriented filesystem paths](https://www.python.org/dev/peps/pep-0355/)
+
+[PEP 428 -- The pathlib module -- object-oriented filesystem paths](https://www.python.org/dev/peps/pep-0428/)
+
+[PEP 519 -- Adding a file system path protocol](https://www.python.org/dev/peps/pep-0519/)
 
 ## LICENSE
 
