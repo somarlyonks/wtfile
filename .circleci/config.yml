@@ -15,5 +15,5 @@ jobs:
           paths:
             - "/usr/local/bin"
             - "/usr/local/lib/python3.6/site-packages"
-      - run: coverage run --include wtfile.py setup.py test
-      - run: codecov --token $CODECOV_TOKEN
+      - run: coverage run setup.py test
+      - run: codecov

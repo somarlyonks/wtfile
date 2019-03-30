@@ -1,0 +1,11 @@
+[run]
+branch = True
+source = wtfile
+
+[report]
+exclude_lines =
+    def print
+    def __repr__
+    def __fspath__
+    raise NotImplementedError
+    if __name__ == .__main__.:

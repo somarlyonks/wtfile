@@ -183,11 +183,34 @@ class FPath(FBase):
     #     """deparecated"""
     #     self.ext(value)
 
+    def cd(self, target):
+        """cd relative path with dry path
+        Different from os.path.join, supports relative path like cd('..'), cd
+        ('../sy') and specially cd('...').
+        Different from with FIO block, it doesn't really do IO chdir, you can
+        do it like
+        ```python
+        with F.DIR.cd('../Colors') as folder:
+            pass
+        ```
+        """
+        if target == '...':
+            return self.parent.parent
+        if target == '..':
+            return self.parent
+        if target.startswith('./'):
+            return self(target.replace('./', ''))
+        if target.startswith('../'):
+            return self.parent(target.replace('../', ''))
+        if target.startswith('.../'):
+            raise ValueError('没有人能听你说话，没有人能背你回家。')
+        return self(target)
+
 
 class FIO(FBase):
 
     def __enter__(self):
-        """ cd dir
+        """cd dir
         with F('/home', 'user') as cwd:
             print(F().cwd)
         """
@@ -211,8 +234,12 @@ class FIO(FBase):
             yield self.module.join(self, child)
 
     @property
-    def cwd(self):  # change to classproperty
+    def cwd(self):
         return self._derive_(os.getcwd())
+
+    @property
+    def abspath(self):
+        return self._derive_(self.module.abspath(self))
 
     @property
     def children(self):
@@ -405,7 +432,7 @@ class FExt(FBase):
     def __radd__(self, other):
         if (self.startswith('.')):
             return self._derive_(str.__add__('.', other).__add__(self[1:]))
-        return super(FExt, self).__radd__(self, other)
+        return super(FExt, self).__radd__(str.__add__('.', other))
 
     def __call__(self, ext, *a, **ka):
         return self._parent._ext(ext, *a, **ka)  # pylint: disable=protected-access
@@ -417,13 +444,13 @@ class F(FPath, FIO):  # pylint: disable=invalid-name
         return self._derive_(*(self, *rst))
 
     @classproperty
-    def DIR(self):  # pylint: disable=invalid-name
-        raise TODO
+    def DIR(cls):  # pylint: disable=invalid-name
+        return cls(os.getcwd())
 
 
 # ***************************************************************************
 
 # TODO: logger
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     print('Woo')

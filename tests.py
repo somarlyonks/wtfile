@@ -1,9 +1,9 @@
 import datetime
+from functools import wraps
+import os
 import re
 import subprocess
 import sys
-import os
-from functools import wraps
 import unittest
 from unittest import TestCase
 
@@ -12,11 +12,11 @@ from wtfile import FExt, FStem, FName
 
 
 def TODO(*_):
-    scan = False  # TODO IN TODO read it from CI envs
-    if scan:
-        raise NotImplementedError(*_)
-    else:
+    scan = False
+    if os.getenv('CI'):
         pass
+    elif scan:
+        raise NotImplementedError(*_)
 
 
 # order 0: makesure tests runable
@@ -54,10 +54,6 @@ class IOCase(TestCase):
 
     def tearDown(self):
         self.dir.rm()
-
-    def scarecrow2(self, name='tmp.file'):
-        self.setUp()
-        return F(self.dir, name).touch()
 
     @staticmethod
     def expect_exception(exception):
@@ -122,15 +118,21 @@ class TestSelf(TestCase):
     def test_call(self):
         dir_ = F('/tmp/wtfile')
         self.assertEqual(dir_('folder')('tmp.file'), '/tmp/wtfile/folder/tmp.file')
+        self.assertEqual(dir_('folder', 'tmp.file'), '/tmp/wtfile/folder/tmp.file')
 
     def test_add(self):
-        TODO()
+        self.assertEqual(F('') + 'x', 'x')
+        self.assertEqual(F('/tmp') + '/wtfile', '/tmp/wtfile')
+        self.assertEqual(type(F('/tmp') + '/wtfile'), F)
 
     def test_radd(self):
-        TODO()
+        self.assertEqual('x' + F(''), 'x')
+        self.assertEqual('/tmp' + F('/wtfile'), '/tmp/wtfile')
+        self.assertEqual(type('/tmp' + F('/wtfile')), F)
 
     def test_div(self):
-        TODO()
+        self.assertEqual(F('/tmp') / 'wtfile' / 'tmp.file', '/tmp/wtfile/tmp.file')
+        self.assertEqual(type(F('/tmp') / 'wtfile' / 'tmp.file'), F)
 
 
 class TestComponents(IOCase):
@@ -162,6 +164,7 @@ class TestComponents(IOCase):
     @IOCase.scarecrow()
     def test_radd(self, file):
         self.assertEqual('x' + file.ext, '.xfile')
+        self.assertEqual('x' + F('file').ext, '.x')
         self.assertEqual('x' + file.stem, 'xtmp')
         self.assertEqual('x' + file.name, 'xtmp.file')
         self.assertEqual(type('x' + file.ext), FExt)
@@ -192,17 +195,53 @@ class TestComponents(IOCase):
         self.assertEqual(type(file.ext), FExt)
         self.assertListEqual(os.listdir(self.dir), ['tmp.file'])
 
-    @IOCase.scarecrow()
-    def test_assgin(self, file):
-        TODO()
-
 
 class TestPath(TestCase):
 
-    TODO()
+    def test_cd(self):
+        dir_ = F('/tmp/wtfile/folder')
+        self.assertEqual(dir_.cd('..'), '/tmp/wtfile')
+        self.assertEqual(dir_.cd('...'), '/tmp')
+        self.assertEqual(dir_.cd('./subfolder'), '/tmp/wtfile/folder/subfolder')
+        self.assertEqual(dir_.cd('../folder2'), '/tmp/wtfile/folder2')
+
+    @IOCase.expect_exception(ValueError)
+    def test_cd_exception(self):
+        dir_ = F('/tmp/wtfile')
+        dir_.cd('.../wtfile')
+
+    def test_cd_root(self):
+        dir_ = F('/tmp/wtfile')
+        self.assertEqual(dir_.cd('...'), '/')
+        self.assertEqual(dir_.cd('...').cd('...'), '/')
+        dir_ = F('tmp/wtfile')
+        self.assertEqual(dir_.cd('...'), '')
+        self.assertEqual(dir_.cd('...').cd('...'), '')
 
 
 class TestIO(IOCase):
+
+    def test_DIR(self):
+        self.assertEqual(F.DIR, os.getcwd())
+
+    @IOCase.scarecrow()
+    def test_file_time(self, file):
+        self.assertEqual(file.atime, os.path.getatime(file))
+        self.assertEqual(file.ctime, os.path.getctime(file))
+        self.assertEqual(file.mtime, os.path.getmtime(file))
+
+    @IOCase.scarecrow()
+    def test_abspath(self, file):
+        self.assertEqual(file.cwd, os.getcwd())
+        self.assertEqual(file.abspath, os.path.abspath(file))
+
+    def test_with_block(self):
+        pwd = os.getcwd()
+        self.assertNotEqual(F.DIR, self.dir)
+        with self.dir as DIR:
+            self.assertEqual(DIR, '/tmp/wtfile')
+            self.assertEqual(F.DIR, '/tmp/wtfile')
+        self.assertEqual(F.DIR, pwd)
 
     TODO()
 
