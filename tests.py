@@ -1,9 +1,9 @@
 import datetime
+from functools import wraps
+import os
 import re
 import subprocess
 import sys
-import os
-from functools import wraps
 import unittest
 from unittest import TestCase
 
@@ -54,10 +54,6 @@ class IOCase(TestCase):
 
     def tearDown(self):
         self.dir.rm()
-
-    def scarecrow2(self, name='tmp.file'):
-        self.setUp()
-        return F(self.dir, name).touch()
 
     @staticmethod
     def expect_exception(exception):
@@ -193,10 +189,6 @@ class TestComponents(IOCase):
         self.assertEqual(type(file.ext), FExt)
         self.assertListEqual(os.listdir(self.dir), ['tmp.file'])
 
-    @IOCase.scarecrow()
-    def test_assgin(self, file):
-        TODO()
-
 
 class TestPath(TestCase):
 
@@ -204,6 +196,15 @@ class TestPath(TestCase):
 
 
 class TestIO(IOCase):
+
+    def test_DIR(self):
+        self.assertEqual(F.DIR, os.getcwd())
+
+    @IOCase.scarecrow()
+    def test_file_time(self, file):
+        self.assertEqual(file.atime, os.path.getatime(file))
+        self.assertEqual(file.ctime, os.path.getctime(file))
+        self.assertEqual(file.mtime, os.path.getmtime(file))
 
     TODO()
 

@@ -211,8 +211,12 @@ class FIO(FBase):
             yield self.module.join(self, child)
 
     @property
-    def cwd(self):  # change to classproperty
+    def cwd(self):
         return self._derive_(os.getcwd())
+
+    @property
+    def abspath(self):
+        return self._derive_(self.module.abspath(self))
 
     @property
     def children(self):
@@ -417,13 +421,13 @@ class F(FPath, FIO):  # pylint: disable=invalid-name
         return self._derive_(*(self, *rst))
 
     @classproperty
-    def DIR(self):  # pylint: disable=invalid-name
-        raise TODO
+    def DIR(cls):  # pylint: disable=invalid-name
+        return cls(os.getcwd())
 
 
 # ***************************************************************************
 
 # TODO: logger
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     print('Woo')
