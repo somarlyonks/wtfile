@@ -183,11 +183,31 @@ class FPath(FBase):
     #     """deparecated"""
     #     self.ext(value)
 
+    def cd(self, target):
+        """cd relative path with dry path
+        Different from os.path.join, supports relative path like cd('..'), cd
+        ('../sy') and specially cd('...').
+        Different from with FIO block, it doesn't really do IO chdir, you can
+        do it like
+        ```python
+        with F.DIR.cd('../Colors') as folder:
+            pass
+        ```
+        """
+        if target == '...':
+            return self.parent.parent
+        if target == '..':
+            return self.parent
+        if target.startswith('../'):
+            target = target.replace('../', '')
+            return self.parent(target)
+        return self(target)
+
 
 class FIO(FBase):
 
     def __enter__(self):
-        """ cd dir
+        """cd dir
         with F('/home', 'user') as cwd:
             print(F().cwd)
         """

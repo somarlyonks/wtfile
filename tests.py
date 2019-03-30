@@ -118,15 +118,21 @@ class TestSelf(TestCase):
     def test_call(self):
         dir_ = F('/tmp/wtfile')
         self.assertEqual(dir_('folder')('tmp.file'), '/tmp/wtfile/folder/tmp.file')
+        self.assertEqual(dir_('folder', 'tmp.file'), '/tmp/wtfile/folder/tmp.file')
 
     def test_add(self):
-        TODO()
+        self.assertEqual(F('') + 'x', 'x')
+        self.assertEqual(F('/tmp') + '/wtfile', '/tmp/wtfile')
+        self.assertEqual(type(F('/tmp') + '/wtfile'), F)
 
     def test_radd(self):
-        TODO()
+        self.assertEqual('x' + F(''), 'x')
+        self.assertEqual('/tmp' + F('/wtfile'), '/tmp/wtfile')
+        self.assertEqual(type('/tmp' + F('/wtfile')), F)
 
     def test_div(self):
-        TODO()
+        self.assertEqual(F('/tmp') / 'wtfile' / 'tmp.file', '/tmp/wtfile/tmp.file')
+        self.assertEqual(type(F('/tmp') / 'wtfile' / 'tmp.file'), F)
 
 
 class TestComponents(IOCase):
@@ -192,7 +198,18 @@ class TestComponents(IOCase):
 
 class TestPath(TestCase):
 
-    TODO()
+    def test_cd(self):
+        dir_ = F('/tmp/wtfile/folder')
+        self.assertEqual(dir_.cd('..'), '/tmp/wtfile')
+        self.assertEqual(dir_.cd('...'), '/tmp')
+
+    def test_cd_root(self):
+        dir_ = F('/tmp/wtfile')
+        self.assertEqual(dir_.cd('...'), '/')
+        self.assertEqual(dir_.cd('...').cd('...'), '/')
+        dir_ = F('tmp/wtfile')
+        self.assertEqual(dir_.cd('...'), '')
+        self.assertEqual(dir_.cd('...').cd('...'), '')
 
 
 class TestIO(IOCase):
@@ -205,6 +222,14 @@ class TestIO(IOCase):
         self.assertEqual(file.atime, os.path.getatime(file))
         self.assertEqual(file.ctime, os.path.getctime(file))
         self.assertEqual(file.mtime, os.path.getmtime(file))
+
+    @IOCase.scarecrow()
+    def test_abspath(self, file):
+        self.assertEqual(file.cwd, os.getcwd())
+        self.assertEqual(file.abspath, os.path.abspath(file))
+
+    def test_with_block(self):
+        TODO()
 
     TODO()
 
