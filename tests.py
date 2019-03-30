@@ -115,6 +115,9 @@ class TestPerformance(TestCase):
 
 class TestSelf(TestCase):
 
+    def test_init_empty(self):
+        self.assertEqual(F(), '')
+
     def test_call(self):
         dir_ = F('/tmp/wtfile')
         self.assertEqual(dir_('folder')('tmp.file'), '/tmp/wtfile/folder/tmp.file')
@@ -131,8 +134,8 @@ class TestSelf(TestCase):
         self.assertEqual(type('/tmp' + F('/wtfile')), F)
 
     def test_div(self):
-        self.assertEqual(F('/tmp') / 'wtfile' / 'tmp.file', '/tmp/wtfile/tmp.file')
-        self.assertEqual(type(F('/tmp') / 'wtfile' / 'tmp.file'), F)
+        self.assertEqual('/tmp' / F('wtfile') / 'tmp.file', '/tmp/wtfile/tmp.file')
+        self.assertEqual(type('/tmp' / F('wtfile') / 'tmp.file'), F)
 
 
 class TestComponents(IOCase):
@@ -176,6 +179,9 @@ class TestComponents(IOCase):
         file = file.ext('xfile')
         self.assertEqual(file.ext, '.xfile')
         self.assertListEqual(os.listdir(self.dir), ['tmp.xfile'])
+        file = file.ext('.xfile')
+        self.assertEqual(file.ext, '.xfile')
+        self.assertListEqual(os.listdir(self.dir), ['tmp.xfile'])
         file = file.stem('tmpx')
         self.assertEqual(file.stem, 'tmpx')
         self.assertListEqual(os.listdir(self.dir), ['tmpx.xfile'])
@@ -194,6 +200,10 @@ class TestComponents(IOCase):
         self.assertEqual(file.ext, '.xfile')
         self.assertEqual(type(file.ext), FExt)
         self.assertListEqual(os.listdir(self.dir), ['tmp.file'])
+        file = file.stem('t', dry=True)
+        self.assertEqual(file.stem, 't')
+        self.assertEqual(type(file.stem), FStem)
+        self.assertListEqual(os.listdir(self.dir), ['tmp.file'])
 
 
 class TestPath(TestCase):
@@ -202,6 +212,7 @@ class TestPath(TestCase):
         dir_ = F('/tmp/wtfile/folder')
         self.assertEqual(dir_.cd('..'), '/tmp/wtfile')
         self.assertEqual(dir_.cd('...'), '/tmp')
+        self.assertEqual(dir_.cd('subfolder'), '/tmp/wtfile/folder/subfolder')
         self.assertEqual(dir_.cd('./subfolder'), '/tmp/wtfile/folder/subfolder')
         self.assertEqual(dir_.cd('../folder2'), '/tmp/wtfile/folder2')
 
@@ -224,6 +235,10 @@ class TestIO(IOCase):
     def test_DIR(self):
         self.assertEqual(F.DIR, os.getcwd())
 
+    @IOCase.expect_exception(AttributeError)
+    def test_set_DIR(self):
+        F().DIR = '/tmp'
+
     @IOCase.scarecrow()
     def test_file_time(self, file):
         self.assertEqual(file.atime, os.path.getatime(file))
@@ -235,12 +250,44 @@ class TestIO(IOCase):
         self.assertEqual(file.cwd, os.getcwd())
         self.assertEqual(file.abspath, os.path.abspath(file))
 
+    @IOCase.scarecrow()
+    def test_rm(self, file):
+        file.rm()  # folder rm tested in scarecrow
+        self.assertListEqual(os.listdir(self.dir), [])
+
+    @IOCase.scarecrow()
+    def test_clear(self, file):
+        self.dir.clear('tmp.file')  # folder rm tested in scarecrow
+        # todo: check the content of the file when read/write finished
+        self.assertListEqual(os.listdir(self.dir), ['tmp.file'])
+
     def test_with_block(self):
         pwd = os.getcwd()
         self.assertNotEqual(F.DIR, self.dir)
         with self.dir as DIR:
             self.assertEqual(DIR, '/tmp/wtfile')
             self.assertEqual(F.DIR, '/tmp/wtfile')
+        self.assertEqual(F.DIR, pwd)
+
+    def test_with_nested_block(self):
+        pwd = os.getcwd()
+        self.assertNotEqual(F.DIR, self.dir)
+        with self.dir as DIR:
+            self.assertEqual(DIR, '/tmp/wtfile')
+            self.dir.mkdir('folder')
+            with self.dir / 'folder' as DIR2:
+                self.assertEqual(DIR2, '/tmp/wtfile/folder')
+        self.assertEqual(F.DIR, pwd)
+
+    @IOCase.expect_exception(TypeError)
+    def test_with_nested_block_exception(self):
+        pwd = os.getcwd()
+        self.assertNotEqual(F.DIR, self.dir)
+        with self.dir as DIR:
+            self.assertEqual(DIR, '/tmp/wtfile')
+            self.dir.mkdir('folder')
+            with self.dir as DIR2:
+                self.assertEqual(DIR2, '/tmp/wtfile/folder')
         self.assertEqual(F.DIR, pwd)
 
     TODO()

@@ -18,7 +18,6 @@ def print(*_, **__):
 class TODO(NotImplementedError):
     pass
 
-# FEAT:  F() create abspath
 # TODELETE remove all print when finished
 
 # chores
@@ -105,7 +104,7 @@ class FBase(str, metaclass=FMeta):
         return self._derive_(other.__add__(self))
 
     def __call__(self):
-        return self
+        raise NotImplementedError()
 
     def __repr__(self):
         return '%s(%s)' % (type(self).__name__, super(FBase, self).__repr__())
@@ -307,7 +306,7 @@ class FIO(FBase):
         """
         return self.module.ismount(self)
 
-    def mkdir(self, mode=0o777, dirname=None):
+    def mkdir(self, dirname=None, mode=0o777):
         """Create a directory named path with numeric mode mode.
         If the directory already exists, FileExistsError is raised.
         On some systems, mode is ignored. Where it is used, the current umask
@@ -323,7 +322,7 @@ class FIO(FBase):
         os.mkdir(path, mode)
         return self._derive_(path)
 
-    def mkfile(self, mode=0o600, filename=None):
+    def mkfile(self, filename=None, mode=0o600):
         path = self if not filename else self / filename
         os.mknod(path, mode)
         return self._derive_(path)
@@ -348,12 +347,12 @@ class FIO(FBase):
     def clear(self, target=None, f=False):
         """Remove a file/dir and recreate it.
         """
-        path = self if not target else self / target
+        path = self if not target else self.cd(target)
         if path.isfile():
             path.rm(f)
             return path.mkfile()
         if path.exists():
-            path.rm()
+            path.rm(f)
         return path.mkdir()
 
     @property
