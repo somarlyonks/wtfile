@@ -229,6 +229,13 @@ class TestPath(TestCase):
         self.assertEqual(dir_.cd('...'), '')
         self.assertEqual(dir_.cd('...').cd('...'), '')
 
+    def test_norm(self):
+        f = F('/tmp/./wtfile')
+        self.assertEqual(f.norm(), '/tmp/wtfile')
+        self.assertEqual(f.normal(), '/tmp/wtfile')
+
+    TODO()
+
 
 class TestIO(IOCase):
 
@@ -289,6 +296,20 @@ class TestIO(IOCase):
             with self.dir as DIR2:
                 self.assertEqual(DIR2, '/tmp/wtfile/folder')
         self.assertEqual(F.DIR, pwd)
+
+    def test_expanduser(self):
+        user = os.getenv('USER')
+        self.assertEqual(F('~/tmp').expanduser(), f'/home/{user}/tmp')
+        self.assertEqual(F('/~/tmp').expanduser(), f'/~/tmp')
+
+    def test_expandvars(self):
+        user = os.getenv('USER')
+        self.assertEqual(F('$USER/tmp').expandvars(), f'{user}/tmp')
+        self.assertEqual(F('/$USER/tmp').expandvars(), f'/{user}/tmp')
+
+    def test_expand(self):
+        user = os.getenv('USER')
+        self.assertEqual(F('~/tmp/$USER/x').expand(), f'/home/{user}/tmp/{user}/x')
 
     TODO()
 
