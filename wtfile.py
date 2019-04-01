@@ -11,14 +11,13 @@ __print = print  # pylint: disable=invalid-name
 
 
 def print(*_, **__):
-    if VERBOSE or __.pop('verbose', True):
+    verbose = __.pop('verbose', True)
+    if VERBOSE or verbose:
         __print(*_, **__)
 
 
-class TODO(NotImplementedError):
+class TODO(NotImplementedError):  # FIXME: @sy remove this in releases
     pass
-
-# TODELETE remove all print when finished
 
 # chores
 # **************************************************************************
@@ -26,7 +25,6 @@ class TODO(NotImplementedError):
 
 __all__ = ['F']
 __author__ = 'Sy<somarl@live.com>'
-__version__ = 'v0.1.0'
 __doc__ = """
 An aggressive alternative to pathlib.path and path.py which supports
 
@@ -67,6 +65,7 @@ P_NEWLINE_END_U = re.compile(r'(?:{0})$'.format(P_NEWLINE_U.pattern))
 
 
 class classproperty(property):  # pylint: disable=invalid-name
+
     def __get__(self, cls, owner):
         return self.fget(owner)
 
@@ -107,7 +106,9 @@ class FBase(str, metaclass=FMeta):
         raise NotImplementedError()
 
     def __repr__(self):
-        return '%s(%s)' % (type(self).__name__, super(FBase, self).__repr__())
+        if VERBOSE:
+            return f'{type(self).__name__}({super(FBase, self).__repr__()})'
+        return f'{super(FBase, self).__repr__()}'
 
 
 class FPath(FBase):
@@ -127,16 +128,17 @@ class FPath(FBase):
         return self
 
     # deprecated
-    # abspath
-    # basename
+    # normcase(window only)
+    # drive(windows only)
+    # realpath(misleading, implicit api)
     # commonpath
     # commonprefix
     # lexists
 
     # TODO:
-    # expanduser
-    # expandvars
+    # glob
     # size
+    # curdir
 
     # the setters just call FName/FStem/FExt.__call__
 
@@ -154,8 +156,7 @@ class FPath(FBase):
         This is the second element of the pair returned by passing path to the
         function split() and proxied by FName.
         """
-        _, name = self.module.split(self)
-        return FName(name, parent=self)
+        return FName(self.module.basename(self), parent=self)
 
     # @name.setter
     # def name(self, value):
@@ -205,6 +206,16 @@ class FPath(FBase):
             raise ValueError('没有人能听你说话，没有人能背你回家。')
         return self(target)
 
+    def norm(self):
+        """Normalize by collapsing redundant separators and up-level
+        references so that A//B, A/B/, A/./B and A/foo/../B all become A/B.
+        This string manipulation may change the meaning of a path that
+        contains symbolic links.
+        """
+        return self._derive_(self.module.normpath(self))
+
+    normal = norm
+
 
 class FIO(FBase):
 
@@ -238,6 +249,10 @@ class FIO(FBase):
 
     @property
     def abspath(self):
+        """Return a normalized absolutized version of the pathname path.
+        On most platforms, this is equivalent to calling the function
+        normpath() as follows: normpath(join(os.getcwd(), path)).
+        """
         return self._derive_(self.module.abspath(self))
 
     @property
@@ -382,6 +397,33 @@ class FIO(FBase):
         if the file does not exist or is inaccessible.
         """
         return self.module.getctime(self)
+
+    def expanduser(self):
+        """On Unix and Windows, return the argument with an initial component
+        of ~ or ~user replaced by that user’s home directory.
+        On Unix, an initial ~ is replaced by the environment variable HOME if
+        it is set; otherwise the current user’s home directory is looked up in
+        the password directory through the built-in module pwd.
+        An initial ~user is looked up directly in the password directory.
+        On Windows, HOME and USERPROFILE will be used if set, otherwise a
+        combination of HOMEPATH and HOMEDRIVE will be used. An initial ~user
+        is handled by stripping the last directory component from the created
+        user path derived above.
+        If the expansion fails or if the path does not begin with a tilde, the
+        path is returned unchanged.
+        """
+        return self._derive_(self.module.expanduser(self))
+
+    def expandvars(self):
+        """Return the argument with environment variables expanded.
+        Substrings of the form $name or ${name} are replaced by the value of
+        environment variable name. Malformed variable names and references to
+        non-existing variables are left unchanged.
+        On Windows, %name% expansions are supported in addition to $name and ${name}."""
+        return self._derive_(self.module.expandvars(self))
+
+    def expand(self):
+        return self.expanduser().expandvars()
 
     def rename(self, name, *, dry=False):
         path, _ = self.module.split(self)
