@@ -4,7 +4,7 @@ An insane alternative to `pathlib.Path` and `path.py`.
 
 ## requirements
 
-It's just an aggressive and insane option, it deponds on nothing but Python3.6.0+ that supports the powerful "path-like".
+Python3.6.0+ for formated string and "path-like".
 
 ## usage
 
@@ -64,15 +64,11 @@ test.cc
 1553913442.148171
 ```
 
-For more evil actions you may refer to the [tests.py](./tests.py) or the upcoming docs.
-
-## TODO
-
-- more reliable IO operations
-- more tests
-- asynchronous support
+For more evil actions you may refer to the [tests.py](./tests.py) ~~or the upcoming docs~~.
 
 ## references
+
+It's rational at some points, though insane, it's just too aggressive if compatibilities count.
 
 [PEP 355 -- Path - Object oriented filesystem paths](https://www.python.org/dev/peps/pep-0355/)
 
