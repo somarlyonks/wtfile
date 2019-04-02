@@ -66,6 +66,9 @@ class IOCase(TestCase):
 
     @staticmethod
     def scarecrow(name='tmp.file', *, clear=True, cleanup=True):
+        if type(name) != str:
+            raise TypeError
+
         def decorator(fn):
             @wraps(fn)
             def decorated(self, *args, **kwargs):
@@ -136,6 +139,11 @@ class TestSelf(TestCase):
     def test_div(self):
         self.assertEqual('/tmp' / F('wtfile') / 'tmp.file', '/tmp/wtfile/tmp.file')
         self.assertEqual(type('/tmp' / F('wtfile') / 'tmp.file'), F)
+
+    def test_to_str(self):
+        f = F('/tmp/wtfile')
+        self.assertEqual(f.to_str(), '/tmp/wtfile')
+        self.assertEqual(type(f.to_str()), str)
 
 
 class TestComponents(IOCase):
@@ -234,6 +242,19 @@ class TestPath(TestCase):
         self.assertEqual(f.norm(), '/tmp/wtfile')
         self.assertEqual(f.normal(), '/tmp/wtfile')
 
+    def test_match(self):
+        f = F('/tmp/wtfile/stem.ext')
+        self.assertEqual(f.match('*.ext'), True)
+        self.assertEqual(f.match('*.xt'), False)
+        self.assertEqual(F('x.xt').match('*.ext'), False)
+
+    def test_matchcase(self):
+        f = F('/tmp/wtfile/stem.eXt')
+        self.assertEqual(f.matchcase('*.eXt'), True)
+        self.assertEqual(f.matchcase('*.ext'), False)
+        self.assertEqual(f.matchcase('*.xt'), False)
+        self.assertEqual(F('x.ext').match('*.eXt'), False)
+
     TODO()
 
 
@@ -265,7 +286,7 @@ class TestIO(IOCase):
     @IOCase.scarecrow()
     def test_clear(self, file):
         self.dir.clear('tmp.file')  # folder rm tested in scarecrow
-        # todo: check the content of the file when read/write finished
+        TODO()  # todo: check the content of the file when read/write finished
         self.assertListEqual(os.listdir(self.dir), ['tmp.file'])
 
     def test_with_block(self):
@@ -310,6 +331,32 @@ class TestIO(IOCase):
     def test_expand(self):
         user = os.getenv('USER')
         self.assertEqual(F('~/tmp/$USER/x').expand(), f'/home/{user}/tmp/{user}/x')
+
+    @IOCase.scarecrow()
+    def test_listdir(self, file):
+        self.assertListEqual(self.dir.listdir(), [file.name])
+
+    @IOCase.scarecrow()
+    def test_listdir_match(self, file):
+        self.assertListEqual(self.dir.listdir('*.file'), [file.name])
+        self.assertListEqual(self.dir.listdir('*.py'), [])
+
+    @IOCase.scarecrow()
+    def test_listdir_parent_children(self, file):
+        self.assertEqual(file.parent, '/tmp/wtfile')
+        self.assertListEqual(file.parent.children, [file.name])
+
+    @IOCase.scarecrow()
+    def test_iter(self, file):
+        for f in self.dir:
+            self.assertEqual(f.name, file.name)
+
+    @IOCase.expect_exception(TypeError)
+    @IOCase.scarecrow()
+    def test_iter_file(self, file):
+        TODO('change this to read lines/thunks')
+        for i in file:
+            pass
 
     TODO()
 

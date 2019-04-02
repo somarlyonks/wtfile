@@ -1,4 +1,5 @@
 # from functools import partial
+import fnmatch
 import os
 import re
 import stat
@@ -110,6 +111,9 @@ class FBase(str, metaclass=FMeta):
             return f'{type(self).__name__}({super(FBase, self).__repr__()})'
         return f'{super(FBase, self).__repr__()}'
 
+    def to_str(self):
+        return str(self)
+
 
 class FPath(FBase):
 
@@ -215,6 +219,19 @@ class FPath(FBase):
         return self._derive_(self.module.normpath(self))
 
     normal = norm
+
+    def match(self, pattern):
+        """Test whether the filename string matches the pattern string,
+        returning True or False.
+        If the operating system is case-insensitive, will be normalized to all
+        lower- or upper-case before the comparison is performed. fnmatchcase()
+        can be used to perform a case-sensitive comparison, regardless of
+        whether that’s standard for the operating system.
+        """
+        return fnmatch.fnmatch(self, pattern)
+
+    def matchcase(self, pattern):
+        return fnmatch.fnmatchcase(self, pattern)
 
 
 class FIO(FBase):
@@ -424,6 +441,15 @@ class FIO(FBase):
 
     def expand(self):
         return self.expanduser().expandvars()
+
+    def listdir(self, pattern=None):
+        """Different to os.listdir.
+        Accepts an optional pattern for fnmatch.filter
+        """
+        names = os.listdir(self)
+        if pattern:
+            return fnmatch.filter(names, pattern)
+        return names
 
     def rename(self, name, *, dry=False):
         path, _ = self.module.split(self)
