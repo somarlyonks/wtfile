@@ -1,9 +1,11 @@
-# from functools import partial
+from functools import partial
 import fnmatch
+import glob
 import os
 import re
 import stat
 import shutil as sh
+import sys
 
 
 VERBOSE = False
@@ -17,8 +19,12 @@ def print(*_, **__):
         __print(*_, **__)
 
 
-class TODO(NotImplementedError):  # FIXME: @sy remove this in releases
-    pass
+def TODO(*_):
+    scan = False
+    if os.getenv('CI'):
+        pass
+    elif scan:
+        raise NotImplementedError(*_)
 
 # chores
 # **************************************************************************
@@ -118,12 +124,12 @@ class FBase(str, metaclass=FMeta):
 class FPath(FBase):
 
     def __div__(self, rest):
-        return self._derive_(self.module.join(self, rest))
+        return self._derive_(self, rest)
 
     __truediv__ = __div__
 
     def __rdiv__(self, rest):
-        return self._derive_(self.module.join(rest, self))
+        return self._derive_(rest, self)
 
     __rtruediv__ = __rdiv__
 
@@ -132,19 +138,10 @@ class FPath(FBase):
         return self
 
     # deprecated
-    # normcase(window only)
-    # drive(windows only)
     # realpath(misleading, implicit api)
     # commonpath
     # commonprefix
     # lexists
-
-    # TODO:
-    # glob
-    # size
-    # curdir
-
-    # the setters just call FName/FStem/FExt.__call__
 
     @property
     def parent(self):
@@ -200,15 +197,7 @@ class FPath(FBase):
         """
         if target == '...':
             return self.parent.parent
-        if target == '..':
-            return self.parent
-        if target.startswith('./'):
-            return self(target.replace('./', ''))
-        if target.startswith('../'):
-            return self.parent(target.replace('../', ''))
-        if target.startswith('.../'):
-            raise ValueError('没有人能听你说话，没有人能背你回家。')
-        return self(target)
+        return self._derive_(self, target).norm()
 
     def norm(self):
         """Normalize by collapsing redundant separators and up-level
@@ -219,6 +208,10 @@ class FPath(FBase):
         return self._derive_(self.module.normpath(self))
 
     normal = norm
+
+    # def normcase(self):
+    #     """deprecated(window only)"""
+    #     return self._derive_(self.module.normcase(self))
 
     def match(self, pattern):
         """Test whether the filename string matches the pattern string,
@@ -256,9 +249,10 @@ class FIO(FBase):
     def __iter__(self):
         """ different to for child in f.children, it joins the paths """
         if not self.isdir():
-            raise TypeError()
-        for child in self.children:
-            yield self.module.join(self, child)
+            yield from self.read().split('\n')
+        else:
+            for child in self.children:
+                yield self._derive_(self, child)
 
     @property
     def cwd(self):
@@ -288,11 +282,22 @@ class FIO(FBase):
 
     @property
     def root(self):
-        raise TODO
+        TODO()
 
-    @property
-    def drive(self):
-        raise TODO
+    # @property
+    # def drive(self):
+    #     """deprecated(windows only)"""
+    #     return self._derive_(self.module.splitdrive(self))
+
+    def glob(self, pathname, *, relative=False, recursive=False):
+        if relative:
+            pathname = self.cd(pathname)
+        return list(map(type(self), glob.glob(pathname, recursive=recursive)))
+
+    def iglob(self, pathname, *, relative=False, recursive=False):
+        if relative:
+            pathname = self.cd(pathname)
+        yield from map(type(self), glob.iglob(pathname, recursive=recursive))
 
     def exists(self):
         return self.module.exists(self)
@@ -364,7 +369,6 @@ class FIO(FBase):
     touch = mkfile
 
     def rm(self, f=False):  # pylint: disable=invalid-name
-        # todo: target
         if self.isdir():
             def onerror(_, path, __):
                 if f:
@@ -386,6 +390,22 @@ class FIO(FBase):
         if path.exists():
             path.rm(f)
         return path.mkdir()
+
+    @property
+    def size(self):
+        return self.getSize(deep=False)
+
+    def getSize(self, inode=False, deep=True):
+        if inode or self.isfile():
+            return self.module.getsize(self)
+
+        size = 0
+        for child in self:
+            if child.isfile():
+                size += self.module.getsize(child)
+            elif deep:
+                size += child.getSize()
+        return size
 
     @property
     def atime(self):
@@ -473,19 +493,34 @@ class FIO(FBase):
             os.rename(self, path)
         return self._derive_(path)
 
-    # def read(self, mode=None, buffering=None, ):
-    def read(self):
-        with open(self, f'r{self._mode}') as f:
-            return f.read()
+    def read(self, buffering=-1, encoding=None, errors='strict'):
+        with open(self, mode=f'r{self._mode}', buffering=buffering, encoding=encoding, errors=errors) as f:
+            return P_NEWLINE_U.sub('\n', f.read())
 
-    def write(self):
-        raise TODO
+    def write(self, text, encoding=None, errors='strict', newline=None, append=False):
+        if newline is None:
+            newline = os.linesep
+
+        if isinstance(text, str):
+            text = P_NEWLINE_U.sub(newline, text)
+            text = text.encode(encoding or sys.getdefaultencoding(), errors)
+
+        mode = 'a' if append else 'w'
+        with open(self, f'{mode}b') as f:
+            f.write(text)
+
+    append = partial(write, append=True)
 
 
 class FName(FBase):
 
     def __call__(self, name, *a, **ka):
         return self._parent._name(name, *a, **ka)  # pylint: disable=protected-access
+
+    def __rdiv__(self, rest):
+        return self._derive_(rest, self)
+
+    __rtruediv__ = __rdiv__
 
 
 class FStem(FBase):
@@ -517,7 +552,7 @@ class F(FPath, FIO):  # pylint: disable=invalid-name
 
 # ***************************************************************************
 
-# TODO: logger
+TODO('logger')
 
 if __name__ == '__main__':
     print('Woo')
