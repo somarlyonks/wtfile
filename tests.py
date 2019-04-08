@@ -9,14 +9,7 @@ from unittest import TestCase
 
 from wtfile import F
 from wtfile import FExt, FStem, FName
-
-
-def TODO(*_):
-    scan = False
-    if os.getenv('CI'):
-        pass
-    elif scan:
-        raise NotImplementedError(*_)
+from wtfile import TODO
 
 
 # order 0: makesure tests runable
@@ -224,11 +217,6 @@ class TestPath(TestCase):
         self.assertEqual(dir_.cd('./subfolder'), '/tmp/wtfile/folder/subfolder')
         self.assertEqual(dir_.cd('../folder2'), '/tmp/wtfile/folder2')
 
-    @IOCase.expect_exception(ValueError)
-    def test_cd_exception(self):
-        dir_ = F('/tmp/wtfile')
-        dir_.cd('.../wtfile')
-
     def test_cd_root(self):
         dir_ = F('/tmp/wtfile')
         self.assertEqual(dir_.cd('...'), '/')
@@ -351,12 +339,62 @@ class TestIO(IOCase):
         for f in self.dir:
             self.assertEqual(f.name, file.name)
 
-    @IOCase.expect_exception(TypeError)
     @IOCase.scarecrow()
     def test_iter_file(self, file):
-        TODO('change this to read lines/thunks')
-        for i in file:
-            pass
+        file.write('\n'.join(map(str, range(10))))
+        for i, line in enumerate(file):
+            self.assertEqual(str(i), line)
+
+    @IOCase.scarecrow()
+    def test_read(self, file):
+        self.assertEqual(file.read(), '')
+
+    @IOCase.scarecrow()
+    def test_write(self, file):
+        file.write('\n'.join(map(str, range(10))), newline='\n')
+        self.assertEqual(file.read(), '\n'.join(map(str, range(10))))
+
+    @IOCase.scarecrow()
+    def test_size(self, file):
+        self.assertEqual(self.dir.size, 0)
+        self.assertEqual(self.dir.getSize(inode=True), 1 << 12)
+        self.assertEqual(file.size, 0)
+        file.write('123')
+        size = self.dir.size
+        self.assertNotEqual(file.size, 0)
+        self.assertNotEqual(self.dir.size, 0)
+        dir2 = self.dir.mkdir('tmp2')
+        dir2.mkfile('tmp2.file').write('234')
+        self.assertNotEqual(dir2.size, 0)
+        self.assertEqual(self.dir.size, size)
+        self.assertNotEqual(self.dir.getSize(deep=True), size)
+
+    @IOCase.scarecrow()
+    def test_glob(self, file):
+        with self.dir as DIR:
+            self.assertListEqual(DIR.glob('*.file'), [file.name])
+
+    @IOCase.scarecrow()
+    def test_glob_relative(self, file):
+        self.assertListEqual(self.dir.glob('*.file', relative=True), [self.dir / file.name])
+
+    @IOCase.scarecrow()
+    def test_glob_recursive(self, file):
+        self.dir.mkdir('tmp2').mkdir('tmp3').mkfile('tmp.xfile')
+        with self.dir as DIR:
+            self.assertListEqual(
+                DIR.glob('**/*.xfile', recursive=True),
+                ['tmp2/tmp3' / file.ext('xfile', dry=True).name]
+            )
+
+    @IOCase.scarecrow()
+    def test_iglob(self, file):
+        with self.dir as DIR:
+            self.assertListEqual(list(DIR.iglob('*.file')), [file.name])
+
+    @IOCase.scarecrow()
+    def test_iglob_relative(self, file):
+        self.assertListEqual(list(self.dir.iglob('*.file', relative=True)), [self.dir / file.name])
 
     TODO()
 
