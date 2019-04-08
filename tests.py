@@ -387,6 +387,15 @@ class TestIO(IOCase):
                 ['tmp2/tmp3' / file.ext('xfile', dry=True).name]
             )
 
+    @IOCase.scarecrow()
+    def test_iglob(self, file):
+        with self.dir as DIR:
+            self.assertListEqual(list(DIR.iglob('*.file')), [file.name])
+
+    @IOCase.scarecrow()
+    def test_iglob_relative(self, file):
+        self.assertListEqual(list(self.dir.iglob('*.file', relative=True)), [self.dir / file.name])
+
     TODO()
 
 
