@@ -243,7 +243,12 @@ class TestPath(TestCase):
         self.assertEqual(f.matchcase('*.xt'), False)
         self.assertEqual(F('x.ext').match('*.eXt'), False)
 
-    TODO()
+    def test_root(self):
+        self.assertEqual(F('/tmp/wtfile').root, '/')
+        self.assertEqual(F('~/tmp/wtfile').root, '~')
+        self.assertEqual(F('./tmp/wtfile').root, '.')
+        self.assertEqual(F('tmp').root, 'tmp')
+        self.assertEqual(F('tmp/wtfile').root, 'tmp')
 
 
 class TestIO(IOCase):
@@ -270,6 +275,10 @@ class TestIO(IOCase):
     def test_rm(self, file):
         file.rm()  # folder rm tested in scarecrow
         self.assertListEqual(os.listdir(self.dir), [])
+
+    @IOCase.expect_exception(TypeError)
+    def test_rm_exception(self):
+        self.dir('tmp.file').rm()
 
     @IOCase.scarecrow()
     def test_clear(self, file):
@@ -396,7 +405,28 @@ class TestIO(IOCase):
     def test_iglob_relative(self, file):
         self.assertListEqual(list(self.dir.iglob('*.file', relative=True)), [self.dir / file.name])
 
-    TODO()
+    @IOCase.scarecrow()
+    def test_islink(self, file):
+        link = self.dir('tmp2.file')
+        link.linkto(file)
+        self.assertEqual(file.islink(), False)
+        self.assertEqual(link.islink(), True)
+
+    def test_isabs(self):
+        self.assertEqual(F('/tmp/wtfile').isabs(), True)
+        self.assertEqual(F('tmp/wtfile').isabs(), False)
+
+    @IOCase.scarecrow()
+    def test_ismount(self, file):
+        self.assertEqual(file.ismount(), False)
+        self.assertEqual(F('/').ismount(), True)
+
+    @IOCase.scarecrow()
+    def test_link(self, file):
+        link = file.linkfrom(self.dir / 'tmp2.file')
+        file.write('123')
+        self.assertEqual(link.islink(), True)
+        self.assertEqual(link.read(), '123')
 
 
 # order Z: finish

@@ -275,14 +275,17 @@ class FIO(FBase):
         return [file for file in self.parent.children if file != self.name]
 
     @property
-    def content(self):
-        if self.isdir():
-            return self.children
-        return self.read()
-
-    @property
     def root(self):
-        TODO()
+        raw = self.to_str()
+        if '/' not in raw:
+            return self
+        if raw.startswith('/'):
+            return self._derive_('/')
+        if raw.startswith('.'):
+            return self._derive_('.')
+        if raw.startswith('~'):
+            return self._derive_('~')
+        return self._derive_(raw.split('/')[0])
 
     # @property
     # def drive(self):
@@ -367,6 +370,16 @@ class FIO(FBase):
     # alias
     mknod = mkfile
     touch = mkfile
+
+    def linkto(self, src):
+        """Create a symbolic link pointing to src named self."""
+        os.symlink(src, self)
+        return self._derive_(src)
+
+    def linkfrom(self, dst):
+        """Create a symbolic link pointing to self named dst."""
+        os.symlink(self, dst)
+        return self._derive_(dst)
 
     def rm(self, f=False):  # pylint: disable=invalid-name
         if self.isdir():
